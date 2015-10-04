@@ -4,6 +4,7 @@
 # Folders description
 * **hw01** Contains first homework: a pink bull (or red-eye unicorn, as you like) 
 * **02** is for second classwork. Just a square with changable filling. Move your mouse up-down & left-right with holded mouse button.
+* **02hw** simple function in polar coordinate system.
 
 # Dependencies
 
