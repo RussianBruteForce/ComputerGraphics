@@ -2,7 +2,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent),
-	  scene{QRect{QPoint{-300,-300}, QSize{600,600}}}
+	  scene{QRect{QPoint{0,0}, QSize{1360,710}}}
 {
 	sceneView = new QGraphicsView(&scene, this);
 	setCentralWidget(sceneView);
