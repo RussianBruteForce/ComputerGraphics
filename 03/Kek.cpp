@@ -3,8 +3,9 @@
 Kek::Kek()
 {
 	img = nullptr;
-//	drawPoint = QPoint(width()/2, height()/2);
+	//	drawPoint = QPoint(width()/2, height()/2);
 	rect = QSize(100, 150);
+	sizeF = 1;
 	painter = new QPainter();
 
 	p1 << QPoint(40, 30)
@@ -23,9 +24,9 @@ Kek::Kek()
 	   << QPoint(0, 30);
 
 	xr = yr = 0;
-//	painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+	//	painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
-//	redraw();
+	//	redraw();
 	reset();
 }
 
@@ -44,10 +45,16 @@ void Kek::mousePressEvent(QMouseEvent* event)
 		break;
 	case Qt::LeftButton:
 		aPoint = event->pos();
+		rPoint = aPoint;
 		break;
 	default:
 		break;
 	}
+
+	auto currRPoint = rPoint - drawPoint;
+	xR(currRPoint.x());
+	yR(currRPoint.y());
+	qDebug() << "Rcenter" << QPoint(xr, yr) << "\nDraw at  <<" << drawPoint << "click" << rPoint <<"\nDiff" <<  rPoint - drawPoint;
 }
 
 void Kek::mouseMoveEvent(QMouseEvent* event)
@@ -59,30 +66,35 @@ void Kek::mouseMoveEvent(QMouseEvent* event)
 		startPos = event->pos();
 	}
 	if ((event->buttons() & Qt::LeftButton)) {
-//		angle += event->pos().x() - aPoint.x();
-		transform.translate(xr, yr);
-		transform.rotate(event->pos().x() - aPoint.x());
-		transform.translate(-xr, -yr);
-		aPoint = event->pos();
+		//		angle += event->pos().x() - aPoint.x();
+		//transform.translate();
+		//transform.translate(xr, yr);
+		//transform.rotate(event->pos().x() - aPoint.x());
+		//transform.translate(-xr, -yr);
+		angle = event->pos().x() - aPoint.x();
+		//aPoint = event->pos();
+		qDebug() << "Rcenter" << QPoint(xr, yr);
+
 	}
 	redraw();
 }
 
 void Kek::mouseReleaseEvent(QMouseEvent* event)
 {
-//	QPoint mPoint;
+	//	rt.reset();
+	//	QPoint mPoint;
 	switch (event->button()) {
 	case Qt::RightButton:
-		qDebug() << "release" << event->pos();
 		drawPoint += event->pos() - startPos;
 		break;
 
 	case Qt::LeftButton:
-//		angle += event->pos().x() - aPoint.x();
-		transform.translate(xr, yr);
-		transform.rotate(event->pos().x() - aPoint.x());
-		transform.translate(-xr, -yr);
-		aPoint = event->pos();
+		angle = aPoint.x() - aPoint.x();
+		writeRot = true;
+		//		transform.translate(xr, yr);
+		//		transform.rotate(event->pos().x() - aPoint.x());
+		//		transform.translate(-xr, -yr);
+		//aPoint = event->pos();
 		break;
 	default:
 		break;
@@ -93,41 +105,92 @@ void Kek::mouseReleaseEvent(QMouseEvent* event)
 void Kek::wheelEvent(QWheelEvent* event)
 {
 	qDebug() << "wheel";
-	qreal ch = 1.05;
-	if (event->pixelDelta().y() < 0)
-		ch = 2 - ch;
+	double ch = 0.05;
+	if (event->pixelDelta().y() < 0){
+		ch *= -1;
+		qDebug() << "low" << ch;
+	}
+	sizeF += ch;
 
-	transform.scale(ch,ch);
+	//transform.scale(ch,ch);
 
-//	transform.translate(drawPoint.x(), drawPoint.y());
+	//	transform.translate(drawPoint.x(), drawPoint.y());
 	redraw();
-//	event->accept();
+	//	event->accept();
+}
+
+void Kek::resizeEvent(QResizeEvent* event)
+{
+	redraw();
+	event->accept();
 }
 
 void Kek::redraw()
 {
-	qDebug() << "draw";
+	//	qDebug() << "draw";
 	QSize s = size();
 	if (img != nullptr)
 		delete img;
 
-	QPicture pic;
+	QPolygon rotatedP1, rotatedP2;
+	rotatedP1.fill(QPoint(),p1.size());
+	rotatedP2.fill(QPoint(),p2.size());
+
+	auto rotate = [this](auto &p,auto &r,QPoint at,auto angle) {
+		for(auto i = 0; i < p.size(); i++) {
+			auto point = p[i];
+			r[i].setX(((point.x() - at.x()) * cos(angle) +
+				   sin(angle)*(point.y() - at.y()))+at.x());
+			r[i].setY((-(point.x() - at.x())* sin(angle) +
+				   cos(angle)*(point.y() - at.y()))+at.y());
+		}
+	};
+
+	auto trans = [this](auto &p, auto &r, QPoint at) {
+		for(auto i = 0; i < p.size(); i++) {
+			r[i].setX(p[i].x()*sizeF +
+				  //at.x() +
+				  drawPoint.x());
+			r[i].setY(p[i].y()*sizeF +
+				  //at.y() +
+				  drawPoint.y());
+		}
+	};
+
+	if (writeRot) {
+		rotate(p1,p1, QPoint(xr, yr),angle/100);
+		rotate(p2,p2, QPoint(xr, yr),angle/100);
+	} else {
+		qDebug()<< "r" << angle;
+		rotate(p1,rotatedP1, QPoint(xr, yr),angle/100);
+		rotate(p2,rotatedP2, QPoint(xr, yr),angle/100);
+	}
+	trans(p1, rotatedP1, QPoint(xr, yr));
+	trans(p2, rotatedP2, QPoint(xr, yr));
+
+
+	//QPicture pic;
 	img = new QPixmap(s);
 	img->fill();
-	painter->begin(&pic);
+	//painter->begin(&pic);
+	painter->begin(img);
 	painter->setPen(QPen(Qt::black));
 	painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
 	//transform.translate(xr, yr);
-	painter->setTransform(transform);
-	painter->drawPolygon(p1);
-	painter->drawPolygon(p2);
-//	painter->drawRect(QRect(drawPoint, rect));
-	painter->end();
+	//painter->setTransform(transform);
 
-	painter->begin(img);
-	painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-	painter->drawPicture(drawPoint, pic);
+	//painter->drawPolygon(p1);
+	//painter->drawPolygon(p2);
+	painter->drawPolygon(rotatedP1);
+	painter->drawPolygon(rotatedP2);
+	//	painter->drawRect(QRect(drawPoint, rect));
+	//painter->end();
+
+
+	//	painter->setTransform(rt);
+	//painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+	//painter->drawPicture(QPoint(0,0), pic);
 	painter->end();
 	setPixmap(*img);
 }

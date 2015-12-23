@@ -10,6 +10,7 @@
 #include <QDebug>
 #include <QPolygon>
 #include <QPicture>
+#include <cmath>
 
 class Kek : public QLabel
 {
@@ -24,12 +25,15 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
+	void resizeEvent(QResizeEvent * event);
 
 private:
+	double angle, sizeF;
+	bool writeRot{false};
 	QPixmap *img;
 	QSize rect;
-	QTransform transform;
-	QPoint startPos, drawPoint, aPoint;
+	QTransform transform, rt;
+	QPoint startPos, drawPoint, aPoint, rPoint;
 	QPainter *painter;
 	QPolygon p1, p2;
 	int xr, yr;
